@@ -2,20 +2,36 @@ import urllib.request
 import json
 import sqlite3
 
-def getCandles(ticker, dataFrom, dataTill, interval=24):
-    url = f'https://iss.moex.com/iss/engines/stock/markets/shares/boards/tqbr/securities/{ticker}/candles.json?from={dataFrom}&till={dataTill}&interval={interval}'
+def getCandles(ticker, date, interval):
+    url = f'https://iss.moex.com/iss/engines/stock/markets/shares/boards/tqbr/securities/{ticker}/candles.json?from={date}&till={date}&interval={interval}'
     response = urllib.request.urlopen(url)
     data = json.loads(response.read().decode('utf-8'))
-    candles = [[ticker, (i[6].split(' '))[0], interval] + i[:4] for i in data['candles']['data']]
+    candles = [[ticker, date, interval] + i[:4] for i in data['candles']['data']]
     return candles
 
-def saveToDb(candles, dataBase='candles.db'):
-    db = sqlite3.connect(dataBase)
+def saveToDb(candles, db):
     cursor = db.cursor()
     cursor.execute('''CREATE TABLE IF NOT EXISTS candles(ticker TEXT, date TEXT, frame INT, open REAL, close REAL, high REAL, low REAL, UNIQUE(ticker, date, frame))''')
     cursor.executemany('INSERT OR IGNORE INTO candles (ticker, date, frame, open, close, high, low) VALUES (?, ?, ?, ?, ?, ?, ?)', candles)
     db.commit()
-    db.close()
 
-candles = getCandles('SBER', '2023-8-02', '2023-10-22', 7)
-saveToDb(candles)
+def smartGetCandles(ticker, date, interval, db):
+    cursor = db.cursor()
+    cursor.execute('SELECT * FROM candles WHERE ticker = ? AND date = ? AND frame = ?', (ticker, date, interval))
+    result = cursor.fetchall()
+    if result:
+        print('From SQLite:')
+        return result
+    print('From ISS:')
+    result = getCandles(ticker, date, interval)
+    saveToDb(result, db)
+    return result
+
+
+db = sqlite3.connect('candles.db')
+ticket, date, frame = input().split()
+while ticket != '0':
+    candle = smartGetCandles(ticket, date, int(frame), db)
+    print(candle)
+    ticket, date, frame = input().split()
+db.close()
