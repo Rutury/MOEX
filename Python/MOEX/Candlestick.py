@@ -27,11 +27,19 @@ def smartGetCandles(ticker, date, interval, db):
     saveToDb(result, db)
     return result
 
+def smartInput():
+    try:
+        ticket, date, interval = input().split()
+        interval = int(interval)
+        return ticket, date, interval
+    except:
+        print('Incorrect input')
+        return ['', '', -1]
 
 db = sqlite3.connect('candles.db')
-ticket, date, frame = input().split()
-while ticket != '0':
-    candle = smartGetCandles(ticket, date, int(frame), db)
+ticket, date, interval = smartInput()
+while ticket != '':
+    candle = smartGetCandles(ticket, date, interval, db)
     print(candle)
-    ticket, date, frame = input().split()
+    ticket, date, interval = smartInput()
 db.close()
