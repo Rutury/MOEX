@@ -6,14 +6,19 @@ def getMarketData(ticker):
     url = f'https://iss.moex.com/iss/securities/{ticker}.json'
     response = urllib.request.urlopen(url)
     data = json.loads(response.read().decode('utf-8'))
+    if not data['boards']['data']:
+        return []
     engineIdx = data['boards']['columns'].index('engine')
     marketIdx = data['boards']['columns'].index('market')
     boardIdx = data['boards']['columns'].index('boardid')
-    print('Idx: ', engineIdx, marketIdx, boardIdx)
     return data['boards']['data'][0][engineIdx], data['boards']['data'][0][marketIdx], data['boards']['data'][0][boardIdx]
 
 def getCandles(ticker, date, interval=24):
-    engine, market, board = getMarketData(ticker)
+    try:
+        engine, market, board = getMarketData(ticker)
+    except:
+        print("Ticker was not found")
+        return []
     url = f'https://iss.moex.com/iss/engines/{engine}/markets/{market}/boards/{board}/securities/{ticker}/candles.json?from={date}&till={date}&interval={interval}'
     response = urllib.request.urlopen(url)
     data = json.loads(response.read().decode('utf-8'))
@@ -39,6 +44,7 @@ def smartGetCandles(ticker, date, interval, db):
 
 def smartInput():
     try:
+        print('Ticker YYYY-MM-DD Frame')
         ticket, date, interval = input().split()
         interval = int(interval)
         return ticket, date, interval
