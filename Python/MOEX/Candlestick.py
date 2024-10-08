@@ -52,7 +52,7 @@ def smartInput():
         print('Incorrect input')
         return ['', '', -1]
 
-db = sqlite3.connect('candles.db')
+db = sqlite3.connect('PYTHON/MOEX/candles.db')
 cursor = db.cursor()
 cursor.execute('''CREATE TABLE IF NOT EXISTS candles(ticker TEXT, date TEXT, interval INT, open REAL, close REAL, high REAL, low REAL, UNIQUE(ticker, date, interval))''')
 db.commit()
