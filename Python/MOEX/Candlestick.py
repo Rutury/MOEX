@@ -51,15 +51,21 @@ def smartInput():
     except:
         print('Incorrect input')
         return ['', '', -1]
+    
+def initIfNotExists(db):
+    cursor = db.cursor()
+    cursor.execute('CREATE TABLE IF NOT EXISTS candles(ticker TEXT, date TEXT, interval INT, open REAL, close REAL, high REAL, low REAL, UNIQUE(ticker, date, interval))')
+    cursor.execute('''SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='candles' AND name='idx_candles_ticker_date_interval' ''')
+    if not cursor.fetchone():
+        cursor.execute('CREATE INDEX idx_candles_ticker_date_interval ON candles(ticker, date, interval)')
+    db.commit()
 
 db = sqlite3.connect('PYTHON/MOEX/candles.db')
-cursor = db.cursor()
-cursor.execute('''CREATE TABLE IF NOT EXISTS candles(ticker TEXT, date TEXT, interval INT, open REAL, close REAL, high REAL, low REAL, UNIQUE(ticker, date, interval))''')
-db.commit()
-
+initIfNotExists(db)
 ticket, date, interval = smartInput()
-while ticket != '':
-    candle = smartGetCandles(ticket, date, interval, db)
-    print(candle)
+while ticket != '' and date != '' and interval in { 1, 10, 60, 24, 7, 31 }:
+    candles = smartGetCandles(ticket, date, interval, db)
+    for candle in candles:
+        print(candle)
     ticket, date, interval = smartInput()
 db.close()
